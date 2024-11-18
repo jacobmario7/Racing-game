@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Racing Game</title>
+  <style>
+    /* Global Styles */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    #game-container {
+      text-align: center;
+      position: relative;
+    }
+
+    #track {
+      width: 1000px;
+      height: 300px;
+      position: relative;
+      border: 2px solid #000;
+      background-color: #e0e0e0;
+      overflow: hidden;
+      margin-bottom: 20px; /* Space for power-up notification */
+    }
+
+    /* Lanes */
+    .lane {
+      width: 100%;
+      position: absolute;
+      display: flex;
+    }
+
+    .top-lane {
+      top: 0;
+    }
+
+    .center-lane {
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .bottom-lane {
+      bottom: 0;
+    }
+
+    /* Terrain Types */
+    .terrain {
+      height: 100%;
+      width: 100%;
+      position: absolute;
+    }
+
+    .terrain.grass {
+      background-image: url(grass.jpg); /* Replace with actual image URL */
+      background-size: cover;
+    }
+
+    .terrain.sand {
+      background-image: url(sand.jpg); /* Replace with actual image URL */
+      background-size: contain;
+    }
+
+    .terrain.asphalt {
+      background-image: url(asphalt.jpg); /* Replace with actual image URL */
+      background-size: contain;
+    }
+
+    /* Runner Styles */
+    .runner {
+      width: 40px;
+      height: 40px;
+      position: absolute;
+      background-color: red;
+      border-radius: 50%;
+      transition: transform 0.1s ease-in-out, left 0.1s linear;
+    }
+
+    /* Power-up Styles */
+    .power-up {
+      width: 30px;
+      height: 30px;
+      position: absolute;
+      top: 0;
+      border-radius: 50%;
+      background-color: white;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      transition: transform 0.2s ease-in-out;
+    }
+
+    .speed-boost {
+      background-image:url(spe.jpg);
+      background-size: contain;
+      background-repeat: no-repeat;
+    }
+
+    .slow-down {
+      background-image: url(slo.jpg);
+      background-size: contain;
+    }
+
+    .freeze {
+      background-image: url(fre.jpg);
+      background-size: contain;
+    }
+
+    /* Button Styles */
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    #winner {
+      font-size: 24px;
+      font-weight: bold;
+      margin-top: 20px;
+      color: green;
+    }
+
+    /* Power-up Notification */
+    #powerup-notification {
+      display: none;
+      position: absolute;
+      top: 240px; /* Positioned below the track */
+      width: 100%;
+      text-align: center;
+      font-size: 18px;
+      color: #fff;
+      padding: 10px;
+      background-color: rgba(0, 0, 0, 0.7);
+      border-radius: 5px;
+    }
+
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div id="track"></div>
+    <div>
+      <button id="start-btn">Start Race</button>
+      <div id="winner"></div>
+      <div id="powerup-notification">
+        <p id="powerup-message"></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Game data
+    // Game data
+// Game data
+const runners = {
+  1: { id: 'runner-1', lane: 'top-lane', terrain: 'grass', baseSpeed: 1.5, speed: 1.5, currentPosition: 0, isFrozen: false },
+  2: { id: 'runner-2', lane: 'center-lane', terrain: 'sand', baseSpeed: 1.5, speed: 1.5, currentPosition: 0, isFrozen: false },
+  3: { id: 'runner-3', lane: 'bottom-lane', terrain: 'asphalt', baseSpeed: 1.5, speed: 1.5, currentPosition: 0, isFrozen: false },
+};
+
+const powerUpTypes = ['speed-boost', 'slow-down', 'freeze'];
+let isRaceActive = false;
+let finishLine = 950;  // Finish line position
+const trackTerrain = shuffle(['grass', 'sand', 'asphalt', 'grass', 'sand', 'asphalt', 'grass', 'sand', 'asphalt']); // Randomized terrain layout
+const trackWidth = trackTerrain.length * 80; // The track length based on terrain strips
+
+const startButton = document.getElementById("start-btn");
+const winnerDiv = document.getElementById("winner");
+const track = document.getElementById("track");
+const powerUpNotification = document.getElementById("powerup-notification");
+const powerUpMessage = document.getElementById("powerup-message");
+
+let powerUps = [];  // Store power-ups with position and type
+
+// Shuffle function for randomizing the terrain
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+  }
+  return array;
+}
+
+// Generate the track with a randomized terrain layout
+function generateTrack() {
+  let currentPosition = 0;
+  
+  // Create terrain strips based on the randomized terrain layout
+  trackTerrain.forEach(terrainType => {
+    const terrain = document.createElement('div');
+    terrain.classList.add('terrain', terrainType);
+    terrain.style.left = `${currentPosition}px`;
+    track.appendChild(terrain);
+    currentPosition += 80;  // Each terrain strip is 80px wide
+  });
+}
+
+// Initialize the lanes for runners
+function createLanes() {
+  const topLane = document.createElement('div');
+  topLane.classList.add('lane', 'top-lane');
+  track.appendChild(topLane);
+
+  const centerLane = document.createElement('div');
+  centerLane.classList.add('lane', 'center-lane');
+  track.appendChild(centerLane);
+
+  const bottomLane = document.createElement('div');
+  bottomLane.classList.add('lane', 'bottom-lane');
+  track.appendChild(bottomLane);
+}
+
+// Create runners and place them in their starting positions
+function createRunners() {
+  Object.values(runners).forEach(runner => {
+    const runnerElement = document.createElement('div');
+    runnerElement.classList.add('runner');
+    runnerElement.id = runner.id;
+    const lane = document.querySelector(`.${runner.lane}`);
+    lane.appendChild(runnerElement);
+
+    // Fixing visibility issue (ensure runners are fully visible within their lanes)
+    runnerElement.style.left = `${runner.currentPosition}px`;
+    runnerElement.style.bottom = (runner.lane === 'bottom-lane') ? '-20px' : 'auto';
+    runnerElement.style.top = (runner.lane === 'top-lane') ? '20px' : 'auto';
+    runnerElement.style.transform = `translateY(-50%)`; // Centering the runners vertically in the lanes
+  });
+}
+
+// Start the race
+startButton.addEventListener('click', () => {
+  if (isRaceActive) return;
+  isRaceActive = true;
+  startRace();
+  generatePowerUps();  // Start generating power-ups once the race starts
+});
+
+// Start race function
+function startRace() {
+  const raceInterval = setInterval(() => {
+    let allFinished = false;
+
+    // Move each runner and check for finish
+    Object.values(runners).forEach(runner => {
+      if (runner.isFrozen) return; // Skip if the runner is frozen
+
+      // Check if the runner is on their designated terrain
+      const runnerElement = document.getElementById(runner.id);
+      const currentTerrain = getTerrainAtPosition(runner.currentPosition);
+
+      if (currentTerrain === runner.terrain) {
+        runner.speed = runner.baseSpeed * 2;  // Double speed on their terrain
+      } else {
+        runner.speed = runner.baseSpeed;  // Reset speed if not on their terrain
+      }
+
+      runner.currentPosition += runner.speed;
+      runnerElement.style.left = `${runner.currentPosition}px`;
+
+      // Check for power-up activation
+      powerUps.forEach(powerUp => {
+        if (runner.lane === powerUp.lane && runner.currentPosition >= powerUp.position - 20 && runner.currentPosition <= powerUp.position + 20) {
+          applyPowerUp(powerUp.type, powerUp.position, powerUp.lane);
+          powerUps = powerUps.filter(p => p !== powerUp);  // Remove the power-up after it is used
+        }
+      });
+
+      // Check if the runner reached the finish line
+      if (runner.currentPosition >= finishLine) {
+        winner(runner.id);
+        allFinished = true;
+      }
+    });
+
+    if (allFinished) {
+      clearInterval(raceInterval);
+    }
+  }, 100);
+}
+
+// Declare the winner
+function winner(runnerId) {
+  const runnerNumber = runnerId.split('-')[1];
+  winnerDiv.textContent = `Winner: Runner ${runnerNumber}`;
+  isRaceActive = false;
+}
+
+// Generate random power-ups along the track (in each lane)
+function generatePowerUps() {
+  const numPowerUps = 5;  // Number of power-ups to create
+  for (let i = 0; i < numPowerUps; i++) {
+    const powerUp = {
+      type: powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)],
+      lane: ['top-lane', 'center-lane', 'bottom-lane'][Math.floor(Math.random() * 3)], // Random lane
+      position: Math.floor(Math.random() * (finishLine - 50)), // Power-ups are positioned before the finish line
+    };
+
+    powerUps.push(powerUp);
+
+    // Create the power-up element and position it
+    const powerUpElement = document.createElement('div');
+    powerUpElement.classList.add('power-up', powerUp.type);
+    powerUpElement.style.left = `${powerUp.position}px`;
+
+    // Set power-up to appear in the correct lane
+    const lane = document.querySelector(`.${powerUp.lane}`);
+    lane.appendChild(powerUpElement);
+  }
+}
+
+// Apply power-up effects
+function applyPowerUp(type, position, lane) {
+  const runner = Object.values(runners).find(r => r.lane === lane && r.currentPosition >= position - 20 && r.currentPosition <= position + 20);
+  
+  if (runner) {
+    switch (type) {
+      case 'speed-boost':
+        runner.speed += 1;  // Increase speed temporarily
+        showPowerUpNotification(`${runner.id} used Speed Boost!`);
+        setTimeout(() => {
+          runner.speed -= 1;  // Reset speed after 3 seconds
+        }, 3000);
+        break;
+      case 'slow-down':
+        runner.speed -= 0.5;  // Decrease speed temporarily
+        // Slow down all other runners
+        Object.values(runners).forEach(otherRunner => {
+          if (otherRunner.id !== runner.id) {
+            otherRunner.speed -= 0.5;
+          }
+        });
+        showPowerUpNotification(`${runner.id} used Slow Down!`);
+        setTimeout(() => {
+          runner.speed += 0.5;  // Reset speed for this runner
+          Object.values(runners).forEach(otherRunner => {
+            if (otherRunner.id !== runner.id) {
+              otherRunner.speed += 0.5;
+            }
+          });
+        }, 3000);
+        break;
+      case 'freeze':
+        // Freeze all other runners for 2 seconds
+        Object.values(runners).forEach(otherRunner => {
+          if (otherRunner.id !== runner.id) {
+            otherRunner.isFrozen = true;
+            setTimeout(() => {
+              otherRunner.isFrozen = false;  // Unfreeze after 2 seconds
+            }, 2000);
+          }
+        });
+        showPowerUpNotification(`${runner.id} used Freeze Opponents!`);
+        break;
+    }
+  }
+}
+
+// Show the power-up notification on the screen
+function showPowerUpNotification(message) {
+  powerUpMessage.textContent = message;
+  powerUpNotification.style.display = 'block';
+
+  // Hide the notification after 3 seconds
+  setTimeout(() => {
+    powerUpNotification.style.display = 'none';
+  }, 3000);
+}
+
+// Get terrain at a given position
+function getTerrainAtPosition(position) {
+  const terrainWidth = 80;  // Each terrain strip width
+  const terrainIndex = Math.floor(position / terrainWidth);
+  return trackTerrain[terrainIndex % trackTerrain.length];  // Terrain type based on position
+}
+
+// Initialize the game
+function initializeGame() {
+  generateTrack();  // Create the terrain strips on the track
+  createLanes();    // Create the lanes
+  createRunners();  // Place the runners in their respective lanes
+}
+
+initializeGame();
+
+
+  </script>
+</body>
+</html>

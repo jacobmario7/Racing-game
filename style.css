@@ -1,0 +1,141 @@
+/* Global Styles */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f0f0f0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+
+#game-container {
+  text-align: center;
+  position: relative;
+}
+
+#track {
+  width: 800px;
+  height: 200px;
+  position: relative;
+  border: 2px solid #000;
+  background-color: #e0e0e0;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+/* Lane Styles */
+.lane {
+  width: 100%;
+  position: absolute;
+  display: flex;
+}
+
+.top-lane { top: 0; }
+.center-lane { top: 50%; transform: translateY(-50%); }
+.bottom-lane { bottom: 0; }
+
+/* Terrain Types */
+.terrain {
+  height: 100%;
+  width: 100%;
+  position: absolute;
+}
+
+.terrain.grass {
+  background-image: url('grass.jpg'); /* Replace with actual image URL */
+  background-size: cover;
+}
+
+.terrain.sand {
+  background-image: url('sand.jpg'); /* Replace with actual image URL */
+  background-size: cover;
+}
+
+.terrain.asphalt {
+  background-image: url('asphalt.jpg'); /* Replace with actual image URL */
+  background-size: cover;
+}
+
+/* Runner Styles */
+.runner {
+  width: 40px;
+  height: 40px;
+  position: absolute;
+  background-color: red; /* Fallback color */
+  border-radius: 50%;
+  transition: transform 0.1s ease-in-out, left 0.1s linear;
+  background-size: cover;
+  background-position: center;
+}
+
+/* Custom avatars for each runner */
+.runner-1 {
+  background-image: url(do.jpg); /* Replace with the correct path */
+}
+
+.runner-2 {
+  background-image: url(cho.jpg); /* Replace with the correct path */
+}
+
+.runner-3 {
+  background-image: url(mrb.jpg); /* Replace with the correct path */
+}
+
+/* Power-up Styles */
+.power-up {
+  width: 30px;
+  height: 30px;
+  position: absolute;
+  top: 0;
+  border-radius: 50%;
+  background-color: yellow;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  transition: transform 0.2s ease-in-out;
+}
+
+.speed-boost {
+  background-image: url('spe.jpg');
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.slow-down {
+  background-image: url('slo.jpg');
+  background-size: contain;
+}
+
+.freeze {
+  background-image: url('fre.jpg');
+  background-size: contain;
+}
+
+/* Button Styles */
+button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+/* Winner Announcement Styles */
+#winner {
+  font-size: 24px;
+  font-weight: bold;
+  margin-top: 20px;
+  color: green;
+}
+
+/* Power-up Notification */
+#powerup-notification {
+  display: none;
+  position: absolute;
+  top: 240px;
+  width: 100%;
+  text-align: center;
+  font-size: 18px;
+  color: #fff;
+  padding: 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 5px;
+}
